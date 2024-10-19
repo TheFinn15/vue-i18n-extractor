@@ -1,7 +1,10 @@
 {
   "name": "vue-extractor-i18n-keys",
   "type": "module",
-  "module": "index.ts",
+  "module": "src/index.ts",
+  "scripts": {
+    "lint:fix": "eslint . --fix"
+  },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
