@@ -1,14 +1,17 @@
 {
   "name": "vue-extractor-i18n-keys",
-  "module": "index.ts",
   "type": "module",
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
+  "module": "index.ts",
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "consola": "^3.2.3"
+    "consola": "^3.2.3",
+    "csv-writer": "^1.6.0"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^3.8.0",
+    "@types/bun": "latest",
+    "eslint": "^9.13.0"
   }
 }
