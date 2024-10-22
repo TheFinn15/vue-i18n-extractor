@@ -1,5 +1,10 @@
 import type { ConfigExtractor, ObjectString } from './types';
-import { createReadStream, readdirSync, writeFileSync } from 'node:fs';
+import {
+  createReadStream,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
 import process from 'node:process';
 import rl from 'node:readline';
@@ -15,7 +20,7 @@ export class ExtractorCore extends CoreBase {
     this.config = {
       ...this.config,
       ...config,
-    }
+    };
 
     this.getProjectRoot();
     this.parseAutoImports();
@@ -70,7 +75,12 @@ export class ExtractorCore extends CoreBase {
       countLines += 1;
     }
 
-    if (countLines === countIncorrectImport) {
+    this.log(this.checkUnusedImports(file, fileImports));
+
+    if (
+      countLines === countIncorrectImport
+      || !Object.keys(fileImports).length
+    ) {
       this.reportKeys();
       process.exit();
     }
@@ -79,6 +89,19 @@ export class ExtractorCore extends CoreBase {
       if (name in this.foundedKeys)
         return;
       this.extract(fileImports, this.resolveAlias(compPath));
+    });
+  }
+
+  private checkUnusedImports(filePath: string, imports: ObjectString) {
+    const file = readFileSync(filePath);
+    const stringFile = file.toString();
+    Object.keys(imports).forEach((name) => {
+      const [_, content] = this.useRegex(
+        this.REGEX_TEMPLATE_CONTENT,
+        stringFile,
+      );
+      if (!content.includes(name))
+        delete imports[name];
     });
   }
 

@@ -47,4 +47,6 @@ const ext = new ExtractorCore(values.input, {
   REPORT_NAME: values.reportName,
   TSCONFIG_PATH: values.tsconfigPath,
 });
-ext.extract();
+ext.delay(200).then(() => {
+  ext.extract();
+});

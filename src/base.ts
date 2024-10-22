@@ -14,6 +14,8 @@ export abstract class CoreBase {
     = /\b(?:\$t|t)\(\s*["'`]([^"'`]+)["'`]\s*\)/gi;
 
   protected readonly REGEX_TEMPLATE_COMPONENT = /<(\w+)/g;
+  protected readonly REGEX_TEMPLATE_CONTENT
+    = /<template>([\s\S]*?)<\/template>/g;
 
   protected config: ConfigExtractor = {
     AUTO_IMPORT_DECLARATION_NAME: 'components.d.ts',
@@ -68,7 +70,7 @@ export abstract class CoreBase {
     return regex.exec(text) ?? [];
   }
 
-  protected async delay(ms: number) {
+  async delay(ms: number) {
     await new Promise(resolve => setTimeout(resolve, ms));
   }
 }
