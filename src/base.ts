@@ -1,5 +1,5 @@
 import type { ConfigExtractor, ObjectString, ObjectStringArray } from './types';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync } from 'node:fs';
 
 import consola from 'consola';
 
@@ -9,9 +9,9 @@ export abstract class CoreBase {
     = /export\sconst\s(?!Lazy)([a-z]+[^:])/gi;
 
   protected readonly REGEX_AUTO_IMPORT_FILE = /([^/]+\.vue)/gi;
-  protected readonly REGEX_AUTO_IMPORT_PATH_FILE = /"([^"]+\.vue)"/gi;
+  protected readonly REGEX_AUTO_IMPORT = /['"]([^'"]+)['"]:\s*typeof\s+import\(['"]([^'"]+\.vue)['"]\)/g;
   protected readonly REGEX_I18N_KEY
-    = /\b(?:\$t|t)\(\s*["'`]([^"'`]+)["'`]\s*\)/gi;
+    = /\b(?:\$t|t)\(\s*["'`]([^"'`]+)["'`][\s\S]*\)/gi;
 
   protected readonly REGEX_TEMPLATE_COMPONENT = /<(\w+)/g;
   protected readonly REGEX_TEMPLATE_CONTENT
@@ -29,7 +29,7 @@ export abstract class CoreBase {
 
   foundedKeys: ObjectStringArray = {};
   rootDir = '';
-  selectedFile = '';
+  selectedPath = '';
 
   protected get autoImportPath() {
     const path
@@ -42,6 +42,10 @@ export abstract class CoreBase {
 
   protected get tsconfigPath() {
     return this.config.TSCONFIG_PATH || `${this.rootDir}.nuxt/tsconfig.json`;
+  }
+
+  protected get inputIsFile() {
+    return lstatSync(this.selectedPath).isFile();
   }
 
   // get alias from nuxt-tsconfig or custom tsconfig

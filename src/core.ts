@@ -6,17 +6,16 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { basename, dirname, resolve } from 'node:path';
-import process from 'node:process';
 import rl from 'node:readline';
 import consola from 'consola';
 import { createObjectCsvWriter } from 'csv-writer';
 import { CoreBase } from './base';
 
 export class ExtractorCore extends CoreBase {
-  constructor(filePath: string, config: Partial<ConfigExtractor>) {
+  constructor(path: string, config: Partial<ConfigExtractor>) {
     super();
 
-    this.selectedFile = filePath;
+    this.selectedPath = path;
     this.config = {
       ...this.config,
       ...config,
@@ -28,7 +27,7 @@ export class ExtractorCore extends CoreBase {
 
   private getProjectRoot() {
     let projectRoot = '';
-    let tempPath = dirname(this.selectedFile);
+    let tempPath = this.inputIsFile ? dirname(this.selectedPath) : this.selectedPath;
     while (!projectRoot.length) {
       const currentFolder = basename(tempPath);
       if (readdirSync(tempPath).includes('package.json'))
@@ -38,8 +37,24 @@ export class ExtractorCore extends CoreBase {
     this.rootDir = projectRoot;
   }
 
-  async extract(imports: ObjectString = {}, file = this.selectedFile) {
-    const currentFileName = basename(file);
+  async extractor() {
+    if (!this.inputIsFile) {
+      await this.extractDirectory();
+    }
+    else {
+      await this.extract();
+    }
+  }
+
+  private async extractDirectory() {
+    const files = readdirSync(this.selectedPath);
+    for await (const name of files) {
+      const filePath = resolve(this.selectedPath, name);
+      await this.extract({}, filePath);
+    }
+  }
+
+  private async extract(imports: ObjectString = {}, file = this.selectedPath) {
     const fileImports = imports;
     const stream = createReadStream(file);
     const rls = rl.createInterface({
@@ -49,7 +64,7 @@ export class ExtractorCore extends CoreBase {
     let countLines = 0;
     let countIncorrectImport = 0;
 
-    this.foundedKeys[currentFileName] = [];
+    this.foundedKeys[file] = [];
 
     for await (const line of rls) {
       const [_g, componentName] = this.useRegex(
@@ -69,20 +84,19 @@ export class ExtractorCore extends CoreBase {
         countIncorrectImport += 1;
       }
       if (translationKey) {
-        this.foundedKeys[currentFileName].push(translationKey);
+        this.foundedKeys[file].push(translationKey);
       }
 
       countLines += 1;
     }
 
-    this.log(this.checkUnusedImports(file, fileImports));
+    this.checkUnusedImports(file, fileImports)
 
     if (
       countLines === countIncorrectImport
       || !Object.keys(fileImports).length
     ) {
-      this.reportKeys();
-      process.exit();
+      return;
     }
 
     Object.entries(fileImports).forEach(([name, compPath]) => {
@@ -105,10 +119,10 @@ export class ExtractorCore extends CoreBase {
     });
   }
 
-  private reportKeys() {
+  reportKeys() {
     if (!Object.values(this.foundedKeys).flat().length) {
       consola.error(
-        `Translation keys not found in or subpaths: ${this.selectedFile}`,
+        `Translation keys not found in or subpaths: ${this.selectedPath}`,
       );
       return;
     }
@@ -152,27 +166,13 @@ export class ExtractorCore extends CoreBase {
       this.log('Auto-Imported Components not found.');
       return;
     }
-    const stream = createReadStream(this.autoImportPath);
-    const rls = rl.createInterface({
-      input: stream,
-      crlfDelay: Infinity,
+
+    const fileRaw = readFileSync(this.autoImportPath).toString();
+
+    [...fileRaw.matchAll(this.REGEX_AUTO_IMPORT)].forEach((arr) => {
+      const [_, name, path] = arr;
+      this.autoImports[name] = path;
     });
-
-    for await (const line of rls) {
-      const [match] = this.REGEX_AUTO_IMPORT_PATH_FILE.exec(line) ?? [];
-
-      if (match && !line.includes('Lazy')) {
-        const componentName = line.split(' ')[2].replace(':', '');
-
-        // remove duplicates by file path
-        if (
-          componentName
-          && Object.values(this.autoImports).every(v => v !== match)
-        ) {
-          this.autoImports[componentName] = match.replaceAll(/["'`]/g, '');
-        }
-      }
-    }
   }
 
   private resolveAlias(importPath: string) {

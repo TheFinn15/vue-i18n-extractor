@@ -47,6 +47,8 @@ const ext = new ExtractorCore(values.input, {
   REPORT_NAME: values.reportName,
   TSCONFIG_PATH: values.tsconfigPath,
 });
-ext.delay(200).then(() => {
-  ext.extract();
+
+ext.delay(200).then(async () => {
+  await Promise.all([ext.extractor(), ext.delay(200)])
+  ext.reportKeys();
 });
