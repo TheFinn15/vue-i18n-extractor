@@ -5,7 +5,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, dirname, resolve } from 'node:path';
+import { basename, dirname, parse, resolve } from 'node:path';
 import rl from 'node:readline';
 import consola from 'consola';
 import { createObjectCsvWriter } from 'csv-writer';
@@ -55,6 +55,8 @@ export class ExtractorCore extends CoreBase {
   }
 
   private async extract(imports: ObjectString = {}, file = this.selectedPath) {
+    const filePathInfo = parse(file);
+    const fileName = resolve(filePathInfo.root, basename(filePathInfo.dir), filePathInfo.base)
     const fileImports = imports;
     const stream = createReadStream(file);
     const rls = rl.createInterface({
@@ -64,7 +66,7 @@ export class ExtractorCore extends CoreBase {
     let countLines = 0;
     let countIncorrectImport = 0;
 
-    this.foundedKeys[file] = [];
+    this.foundedKeys[fileName] = [];
 
     for await (const line of rls) {
       const [_g, componentName] = this.useRegex(
@@ -84,13 +86,14 @@ export class ExtractorCore extends CoreBase {
         countIncorrectImport += 1;
       }
       if (translationKey) {
-        this.foundedKeys[file].push(translationKey);
+        this.foundedKeys[fileName].push(translationKey);
       }
 
       countLines += 1;
     }
 
-    this.checkUnusedImports(file, fileImports)
+    // TODO: incorrect check of unused imports
+    // this.checkUnusedImports(file, fileImports)
 
     if (
       countLines === countIncorrectImport
@@ -99,11 +102,11 @@ export class ExtractorCore extends CoreBase {
       return;
     }
 
-    Object.entries(fileImports).forEach(([name, compPath]) => {
-      if (name in this.foundedKeys)
-        return;
-      this.extract(fileImports, this.resolveAlias(compPath));
-    });
+    Object.entries(fileImports)
+      .filter(([_name, cPath]) => Object.keys(this.foundedKeys).every(key => !cPath.includes(key)))
+      .forEach(([_name, compPath]) => {
+        this.extract(fileImports, this.resolveAlias(compPath));
+      });
   }
 
   private checkUnusedImports(filePath: string, imports: ObjectString) {
@@ -153,9 +156,14 @@ export class ExtractorCore extends CoreBase {
           }),
         );
         break;
-      case 'json':
-        writeFileSync(filePath, JSON.stringify(this.foundedKeys, undefined, 2));
+      case 'json': {
+        const sorted = Object.entries(this.foundedKeys).sort((a, b) => b[1].length - a[1].length).reduce((_obj, [k, v]) => ({
+          ..._obj,
+          [k]: v,
+        }), {});
+        writeFileSync(filePath, JSON.stringify(sorted, undefined, 2));
         break;
+      }
     }
 
     consola.success(`Translation keys is wrote in: ./${filePath}`);
