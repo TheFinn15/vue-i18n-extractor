@@ -159,7 +159,7 @@ export class ExtractorCore extends CoreBase {
       case 'json': {
         const sorted = Object.entries(this.foundedKeys).sort((a, b) => b[1].length - a[1].length).reduce((_obj, [k, v]) => ({
           ..._obj,
-          [k]: v,
+          [k]: [...new Set(v)],
         }), {});
         writeFileSync(filePath, JSON.stringify(sorted, undefined, 2));
         break;
