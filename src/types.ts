@@ -12,6 +12,14 @@ export interface ConfigExtractor {
   REPORT_NAME: string;
 }
 
-export type ObjectString = Record<string, string>;
+export interface UseRegexParams {
+  regex: RegExp;
+  text: string;
+  global?: boolean;
+}
 
-export type ObjectStringArray = Record<string, string[]>;
+type ObjectOf<ObjectType> = Record<string, ObjectType>;
+
+export type ObjectString = ObjectOf<string>;
+
+export type ObjectStringArray = ObjectOf<string[]>;

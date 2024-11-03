@@ -70,12 +70,20 @@ export class ExtractorCore extends CoreBase {
     this.foundedKeys[fileName] = [];
 
     for await (const line of rls) {
-      const [_g, componentName] = useRegex(
-        this.REGEX_TEMPLATE_COMPONENT,
-        line,
+      const [, componentName] = useRegex(
+        {
+          text: line,
+          regex: this.REGEX_TEMPLATE_COMPONENT,
+        },
       );
-      const [_, name, path] = useRegex(this.REGEX_FILE_IMPORT, line);
-      const [__, translationKey] = useRegex(this.REGEX_I18N_KEY, line);
+      const [, name, path] = useRegex({
+        regex: this.REGEX_FILE_IMPORT,
+        text: line,
+      });
+      const [, translationKey] = useRegex({
+        regex: this.REGEX_I18N_KEY,
+        text: line,
+      });
 
       if (componentName in this.autoImports) {
         fileImports[componentName] = this.autoImports[componentName];
@@ -93,8 +101,7 @@ export class ExtractorCore extends CoreBase {
       countLines += 1;
     }
 
-    // TODO: incorrect check of unused imports
-    // this.checkUnusedImports(file, fileImports)
+    this.checkUnusedImports(file, fileImports);
 
     if (
       countLines === countIncorrectImport
@@ -111,16 +118,13 @@ export class ExtractorCore extends CoreBase {
   }
 
   private checkUnusedImports(filePath: string, imports: ObjectString) {
-    const file = readFileSync(filePath);
-    const stringFile = file.toString();
-    Object.keys(imports).forEach((name) => {
-      const [_, content] = useRegex(
-        this.REGEX_TEMPLATE_CONTENT,
-        stringFile,
-      );
-      if (!content.includes(name))
+    const fileContent = readFileSync(filePath).toString();
+    const fileImports = [...fileContent.matchAll(this.REGEX_AUTO_IMPORT_FILE)].map(arr => arr[1]).flat();
+    fileImports.forEach((name) => {
+      const countMatches = fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
+      if (!fileContent.includes(name) && countMatches <= 1)
         delete imports[name];
-    });
+    })
   }
 
   reportKeys() {
@@ -158,10 +162,12 @@ export class ExtractorCore extends CoreBase {
         );
         break;
       case 'json': {
-        const sorted = Object.entries(this.foundedKeys).sort((a, b) => b[1].length - a[1].length).reduce((_obj, [k, v]) => ({
-          ..._obj,
-          [k]: [...new Set(v)],
-        }), {});
+        const sorted = Object.entries(this.foundedKeys)
+          .sort((a, b) => b[1].length - a[1].length)
+          .reduce((_obj, [k, v]) => ({
+            ..._obj,
+            [k]: [...new Set(v)],
+          }), {});
         writeFileSync(filePath, JSON.stringify(sorted, undefined, 2));
         break;
       }

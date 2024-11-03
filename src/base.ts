@@ -26,7 +26,7 @@ export abstract class CoreBase {
     REPORT_NAME: 'i18n-report',
   };
 
-  protected autoImports: ObjectString = {};
+  autoImports: ObjectString = {};
 
   foundedKeys: ObjectStringArray = {};
   rootDir = '';

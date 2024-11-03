@@ -3,7 +3,8 @@
   "type": "module",
   "module": "src/index.ts",
   "scripts": {
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "vitest"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^3.8.0",
     "@types/bun": "latest",
-    "eslint": "^9.13.0"
+    "eslint": "^9.13.0",
+    "vitest": "^2.1.4"
   }
 }
