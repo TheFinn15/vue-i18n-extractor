@@ -10,6 +10,10 @@ export interface ConfigExtractor {
 
   REPORT_FILE_TYPE: ReportType;
   REPORT_NAME: string;
+  REPORT_OUTPUT: string;
+
+  // allow empties in report file
+  ALLOW_EMPTY_FILES: boolean;
 }
 
 export interface UseRegexParams {

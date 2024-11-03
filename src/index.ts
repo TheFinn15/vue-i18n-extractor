@@ -31,22 +31,34 @@ const { values } = parseArgs({
       default: 'i18n-report',
       type: 'string',
     },
+    allowEmpty: {
+      default: true,
+      type: 'boolean',
+    },
+    reportOutput: {
+      default: './',
+      type: 'string',
+    },
   },
   allowPositionals: true,
   strict: true,
 });
 
-if (!values.input) {
+const input = Bun.env.TEST_FILE || values.input;
+
+if (!input) {
   consola.error('You missed input file!');
   process.exit();
 }
 
-const ext = new ExtractorCore(values.input, {
+const ext = new ExtractorCore(input, {
   AUTO_IMPORT_DECLARATION_NAME: values.autoImportName,
   AUTO_IMPORT_DECLARATION_PATH: values.autoImportPath,
   REPORT_FILE_TYPE: values.reportType as ReportType,
   REPORT_NAME: values.reportName,
   TSCONFIG_PATH: values.tsconfigPath,
+  ALLOW_EMPTY_FILES: values.allowEmpty,
+  REPORT_OUTPUT: values.reportOutput,
 });
 
 delay(200).then(async () => {

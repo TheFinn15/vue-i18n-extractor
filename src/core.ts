@@ -122,12 +122,12 @@ export class ExtractorCore extends CoreBase {
     const fileImports = [...fileContent.matchAll(this.REGEX_AUTO_IMPORT_FILE)].map(arr => arr[1]).flat();
     fileImports.forEach((name) => {
       const countMatches = fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
-      if (!fileContent.includes(name) && countMatches <= 1)
-        delete imports[name];
+      if (countMatches <= 1)
+        delete imports[basename(name, '.vue')];
     })
   }
 
-  reportKeys() {
+  reportKeys(allowEmpty = this.config.ALLOW_EMPTY_FILES) {
     if (!Object.values(this.foundedKeys).flat().length) {
       consola.error(
         `Translation keys not found in or subpaths: ${this.selectedPath}`,
@@ -135,9 +135,9 @@ export class ExtractorCore extends CoreBase {
       return;
     }
 
-    const fileType = this.config.REPORT_FILE_TYPE;
-    const reportName = this.config.REPORT_NAME;
-    const filePath = `${reportName}.${fileType}`;
+    const { REPORT_FILE_TYPE: fileType, REPORT_NAME: reportName, REPORT_OUTPUT: outputPath } = this.config;
+
+    const filePath = resolve(outputPath, `${reportName}.${fileType}`)
 
     const csvHeaders = [
       {
@@ -164,6 +164,7 @@ export class ExtractorCore extends CoreBase {
       case 'json': {
         const sorted = Object.entries(this.foundedKeys)
           .sort((a, b) => b[1].length - a[1].length)
+          .filter(([_key, values]) => allowEmpty ? true : values.length)
           .reduce((_obj, [k, v]) => ({
             ..._obj,
             [k]: [...new Set(v)],
@@ -173,7 +174,9 @@ export class ExtractorCore extends CoreBase {
       }
     }
 
-    consola.success(`Translation keys is wrote in: ./${filePath}`);
+    consola.success(`Translation keys is wrote in: ${filePath}`);
+
+    return filePath;
   }
 
   private async parseAutoImports() {

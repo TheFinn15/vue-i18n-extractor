@@ -24,6 +24,8 @@ export abstract class CoreBase {
     TSCONFIG_PATH: '',
     REPORT_FILE_TYPE: 'json',
     REPORT_NAME: 'i18n-report',
+    ALLOW_EMPTY_FILES: true,
+    REPORT_OUTPUT: './',
   };
 
   autoImports: ObjectString = {};
