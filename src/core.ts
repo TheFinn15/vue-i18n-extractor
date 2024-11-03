@@ -10,6 +10,7 @@ import rl from 'node:readline';
 import consola from 'consola';
 import { createObjectCsvWriter } from 'csv-writer';
 import { CoreBase } from './base';
+import { useRegex } from './utils';
 
 export class ExtractorCore extends CoreBase {
   constructor(path: string, config: Partial<ConfigExtractor>) {
@@ -47,7 +48,7 @@ export class ExtractorCore extends CoreBase {
   }
 
   private async extractDirectory() {
-    const files = readdirSync(this.selectedPath);
+    const files = this.recursiveCheckDirectory(this.selectedPath);
     for await (const name of files) {
       const filePath = resolve(this.selectedPath, name);
       await this.extract({}, filePath);
@@ -69,12 +70,12 @@ export class ExtractorCore extends CoreBase {
     this.foundedKeys[fileName] = [];
 
     for await (const line of rls) {
-      const [_g, componentName] = this.useRegex(
+      const [_g, componentName] = useRegex(
         this.REGEX_TEMPLATE_COMPONENT,
         line,
       );
-      const [_, name, path] = this.useRegex(this.REGEX_FILE_IMPORT, line);
-      const [__, translationKey] = this.useRegex(this.REGEX_I18N_KEY, line);
+      const [_, name, path] = useRegex(this.REGEX_FILE_IMPORT, line);
+      const [__, translationKey] = useRegex(this.REGEX_I18N_KEY, line);
 
       if (componentName in this.autoImports) {
         fileImports[componentName] = this.autoImports[componentName];
@@ -113,7 +114,7 @@ export class ExtractorCore extends CoreBase {
     const file = readFileSync(filePath);
     const stringFile = file.toString();
     Object.keys(imports).forEach((name) => {
-      const [_, content] = this.useRegex(
+      const [_, content] = useRegex(
         this.REGEX_TEMPLATE_CONTENT,
         stringFile,
       );

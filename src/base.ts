@@ -1,6 +1,7 @@
 import type { ConfigExtractor, ObjectString, ObjectStringArray } from './types';
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, readFileSync } from 'node:fs';
 
+import { resolve } from 'node:path/posix';
 import consola from 'consola';
 
 export abstract class CoreBase {
@@ -69,12 +70,17 @@ export abstract class CoreBase {
     consola.info('INFO:', ...args);
   }
 
-  protected useRegex(regex: RegExp, text: string) {
-    regex.lastIndex = 0;
-    return regex.exec(text) ?? [];
-  }
-
-  async delay(ms: number) {
-    await new Promise(resolve => setTimeout(resolve, ms));
+  protected recursiveCheckDirectory(dir: string, files_: string[] = []) {
+    const files = readdirSync(dir);
+    for (const file of files) {
+      const name = resolve(dir, file);
+      if (lstatSync(name).isDirectory()) {
+        this.recursiveCheckDirectory(name, files_);
+      }
+      else {
+        files_.push(name);
+      }
+    }
+    return files_;
   }
 }

@@ -3,6 +3,7 @@ import process from 'node:process';
 import { parseArgs } from 'node:util';
 import consola from 'consola';
 import { ExtractorCore } from './core';
+import { delay } from './utils';
 
 const { values } = parseArgs({
   args: Bun.argv,
@@ -48,7 +49,7 @@ const ext = new ExtractorCore(values.input, {
   TSCONFIG_PATH: values.tsconfigPath,
 });
 
-ext.delay(200).then(async () => {
-  await Promise.all([ext.extractor(), ext.delay(200)])
+delay(200).then(async () => {
+  await Promise.all([ext.extractor(), delay(200)])
   ext.reportKeys();
 });
