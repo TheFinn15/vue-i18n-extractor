@@ -44,7 +44,17 @@ const { values } = parseArgs({
   strict: true,
 });
 
-const input = Bun.env.TEST_FILE || values.input;
+const {
+  TEST_FILE,
+  AUTO_IMPORT_NAME,
+  AUTO_IMPORT_PATH,
+  REPORT_TYPE,
+  REPORT_OUTPUT,
+  REPORT_NAME,
+  TSCONFIG_PATH,
+} = Bun.env;
+
+const input = TEST_FILE || values.input;
 
 if (!input) {
   consola.error('You missed input file!');
@@ -52,16 +62,16 @@ if (!input) {
 }
 
 const ext = new ExtractorCore(input, {
-  AUTO_IMPORT_DECLARATION_NAME: values.autoImportName,
-  AUTO_IMPORT_DECLARATION_PATH: values.autoImportPath,
-  REPORT_FILE_TYPE: values.reportType as ReportType,
-  REPORT_NAME: values.reportName,
-  TSCONFIG_PATH: values.tsconfigPath,
+  AUTO_IMPORT_DECLARATION_NAME: AUTO_IMPORT_NAME ?? values.autoImportName,
+  AUTO_IMPORT_DECLARATION_PATH: AUTO_IMPORT_PATH ?? values.autoImportPath,
+  REPORT_FILE_TYPE: (REPORT_TYPE ?? values.reportType) as ReportType,
+  REPORT_NAME: REPORT_NAME ?? values.reportName,
+  TSCONFIG_PATH: TSCONFIG_PATH ?? values.tsconfigPath,
   ALLOW_EMPTY_FILES: values.allowEmpty,
-  REPORT_OUTPUT: values.reportOutput,
+  REPORT_OUTPUT: REPORT_OUTPUT ?? values.reportOutput,
 });
 
 delay(200).then(async () => {
-  await Promise.all([ext.extractor(), delay(200)])
+  await Promise.all([ext.extractor(), delay(200)]);
   ext.reportKeys();
 });

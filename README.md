@@ -1,4 +1,3 @@
-
 # Extractor keys vue-i18n
 
 This tool extracts i18n keys from your Vue project, simplifying translation management. It's pre-configured for **Nuxt** but can be customized via parameters for other projects.
@@ -28,42 +27,45 @@ bun index.ts --input src/components --reportType json --reportOutput ./reports
 ```
 
 ## Advantages
+
 Detailed information in the parameters table below:
 
 1. **Component Auto-Imports Handling**:
-    - **Parameters**: `--autoImportName`, `--autoImportPath`
-    - **Advantage**: Supports projects that use auto-imports by allowing you to specify the file and path for component definitions. This ensures that all components are correctly processed.
+
+   - **Parameters**: `--autoImportName`, `--autoImportPath`
+   - **Advantage**: Supports projects that use auto-imports by allowing you to specify the file and path for component definitions. This ensures that all components are correctly processed.
 
 2. **TypeScript Aliases Support**:
-    - **Parameter**: `--tsconfigPath`
-    - **Advantage**: Accommodates projects with aliased imports by allowing you to specify the `tsconfig.json` file path. This ensures that all modules are correctly resolved during the extraction process.
+
+   - **Parameter**: `--tsconfigPath`
+   - **Advantage**: Accommodates projects with aliased imports by allowing you to specify the `tsconfig.json` file path. This ensures that all modules are correctly resolved during the extraction process.
 
 3. **Customizable Report Formats**:
-    - **Parameter**: `--reportType`
-    - **Advantage**: Provides options for different report formats (`csv` or `json`). This flexibility ensures compatibility with various workflows and preferences.
+
+   - **Parameter**: `--reportType`
+   - **Advantage**: Provides options for different report formats (`csv` or `json`). This flexibility ensures compatibility with various workflows and preferences.
 
 4. **Configurable Report Output**:
-    - **Parameters**: `--reportName`, `--reportOutput`
-    - **Advantage**: Allows you to customize the report file name and output directory. This helps in organizing and managing reports effectively.
+
+   - **Parameters**: `--reportName`, `--reportOutput`
+   - **Advantage**: Allows you to customize the report file name and output directory. This helps in organizing and managing reports effectively.
 
 5. **Control over Empty Files**:
-    - **Parameter**: `--allowEmpty`
-    - **Advantage**: Offers control over whether empty files should be included in the report. This can help in filtering out noise and focusing on relevant data.
-
+   - **Parameter**: `--allowEmpty`
+   - **Advantage**: Offers control over whether empty files should be included in the report. This can help in filtering out noise and focusing on relevant data.
 
 ### Parameters
 
-| Parameter    | Type    | Required | Description                                                                       | Default        |
-|--------------|---------|----------|-----------------------------------------------------------------------------------|----------------|
-| `input`      | string  | Yes | Path to the file or directory where to search for translation keys. |                |
-| `autoImportName`| string  | No | Name of the file with component auto-imports definitions.                         | `components.d.ts` |
-| `autoImportPath`| string  | No | Path to the file with component auto-imports.                                     | `""`           |
-| `tsconfigPath` | string  | No | Path to `tsconfig.json` file if you have alias imports configured.                | `""`           |
-| `reportType` | string  | No | Report format. Available values: `csv` or `json`.                                 | `json`         |
-| `reportName` | string  | No | Report file name.                                                                 | `i18n-report`  |
-| `allowEmpty` | boolean | No | Allow empty files in the report.                                                  | `true`         |
-| `reportOutput` | string  | No | Directory for saving the report.                                                  | `./`           |
-
+| Parameter        | Type    | Required | Description                                                         | Default           |
+| ---------------- | ------- | -------- | ------------------------------------------------------------------- | ----------------- |
+| `input`          | string  | Yes      | Path to the file or directory where to search for translation keys. |                   |
+| `autoImportName` | string  | No       | Name of the file with component auto-imports definitions.           | `components.d.ts` |
+| `autoImportPath` | string  | No       | Path to the file with component auto-imports.                       | `""`              |
+| `tsconfigPath`   | string  | No       | Path to `tsconfig.json` file if you have alias imports configured.  | `""`              |
+| `reportType`     | string  | No       | Report format. Available values: `csv` or `json`.                   | `json`            |
+| `reportName`     | string  | No       | Report file name.                                                   | `i18n-report`     |
+| `allowEmpty`     | boolean | No       | Allow empty files in the report.                                    | `true`            |
+| `reportOutput`   | string  | No       | Directory for saving the report.                                    | `./`              |
 
 ## Code Example
 
@@ -81,9 +83,7 @@ Resulting report generated by the program in JSON format:
 
 ```json
 {
-    "src/components/YourComponent.vue": [
-        "message.hello"
-    ]
+  "src/components/YourComponent.vue": ["message.hello"]
 }
 ```
 

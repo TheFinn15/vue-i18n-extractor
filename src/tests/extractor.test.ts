@@ -11,27 +11,27 @@ beforeAll(async () => {
   extractor = new ExtractorCore(testFile, {});
   await delay(200);
   extractor.extractor();
-})
+});
 
 describe('extractor', () => {
   it('check root dir', () => {
-    expect(extractor.rootDir).toBe(testFile.slice(0, testFile.length - 6))
-  })
+    expect(extractor.rootDir).toBe(testFile.slice(0, testFile.length - 6));
+  });
   it('check auto imports', () => {
-    expect(Object.keys(extractor.autoImports).length).toBeGreaterThan(0)
-  })
+    expect(Object.keys(extractor.autoImports).length).toBeGreaterThan(0);
+  });
   it('check non-empty report', async () => {
     await delay(500);
     extractor.reportKeys(false);
     const report = reportJson as ObjectStringArray;
 
-    expect(Object.values(report).every(v => v.length)).toBe(true)
-  })
+    expect(Object.values(report).every((v) => v.length)).toBe(true);
+  });
   it('check with empty report', async () => {
     await delay(500);
     extractor.reportKeys();
     const report = reportJson as ObjectStringArray;
 
-    expect(Object.values(report).every(v => v.length)).toBe(true)
-  })
-})
+    expect(Object.values(report).every((v) => v.length)).toBe(true);
+  });
+});

@@ -3,7 +3,8 @@
   "type": "module",
   "module": "src/index.ts",
   "scripts": {
-    "lint:fix": "eslint . --fix",
+    "lint": "eslint . --fix",
+    "format": "bun lint & prettier --write .",
     "test": "vitest"
   },
   "peerDependencies": {

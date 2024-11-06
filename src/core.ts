@@ -28,7 +28,9 @@ export class ExtractorCore extends CoreBase {
 
   private getProjectRoot() {
     let projectRoot = '';
-    let tempPath = this.inputIsFile ? dirname(this.selectedPath) : this.selectedPath;
+    let tempPath = this.inputIsFile
+      ? dirname(this.selectedPath)
+      : this.selectedPath;
     while (!projectRoot.length) {
       const currentFolder = basename(tempPath);
       if (readdirSync(tempPath).includes('package.json'))
@@ -41,8 +43,7 @@ export class ExtractorCore extends CoreBase {
   async extractor() {
     if (!this.inputIsFile) {
       await this.extractDirectory();
-    }
-    else {
+    } else {
       await this.extract();
     }
   }
@@ -57,7 +58,11 @@ export class ExtractorCore extends CoreBase {
 
   private async extract(imports: ObjectString = {}, file = this.selectedPath) {
     const filePathInfo = parse(file);
-    const fileName = resolve(filePathInfo.root, basename(filePathInfo.dir), filePathInfo.base)
+    const fileName = resolve(
+      filePathInfo.root,
+      basename(filePathInfo.dir),
+      filePathInfo.base,
+    );
     const fileImports = imports;
     const stream = createReadStream(file);
     const rls = rl.createInterface({
@@ -70,12 +75,10 @@ export class ExtractorCore extends CoreBase {
     this.foundedKeys[fileName] = [];
 
     for await (const line of rls) {
-      const [, componentName] = useRegex(
-        {
-          text: line,
-          regex: this.REGEX_TEMPLATE_COMPONENT,
-        },
-      );
+      const [, componentName] = useRegex({
+        text: line,
+        regex: this.REGEX_TEMPLATE_COMPONENT,
+      });
       const [, name, path] = useRegex({
         regex: this.REGEX_FILE_IMPORT,
         text: line,
@@ -87,11 +90,9 @@ export class ExtractorCore extends CoreBase {
 
       if (componentName in this.autoImports) {
         fileImports[componentName] = this.autoImports[componentName];
-      }
-      else if (name && path) {
+      } else if (name && path) {
         fileImports[name] = path;
-      }
-      else {
+      } else {
         countIncorrectImport += 1;
       }
       if (translationKey) {
@@ -104,14 +105,16 @@ export class ExtractorCore extends CoreBase {
     this.checkUnusedImports(file, fileImports);
 
     if (
-      countLines === countIncorrectImport
-      || !Object.keys(fileImports).length
+      countLines === countIncorrectImport ||
+      !Object.keys(fileImports).length
     ) {
       return;
     }
 
     Object.entries(fileImports)
-      .filter(([_name, cPath]) => Object.keys(this.foundedKeys).every(key => !cPath.includes(key)))
+      .filter(([_name, cPath]) =>
+        Object.keys(this.foundedKeys).every((key) => !cPath.includes(key)),
+      )
       .forEach(([_name, compPath]) => {
         this.extract(fileImports, this.resolveAlias(compPath));
       });
@@ -119,12 +122,14 @@ export class ExtractorCore extends CoreBase {
 
   private checkUnusedImports(filePath: string, imports: ObjectString) {
     const fileContent = readFileSync(filePath).toString();
-    const fileImports = [...fileContent.matchAll(this.REGEX_AUTO_IMPORT_FILE)].map(arr => arr[1]).flat();
+    const fileImports = [...fileContent.matchAll(this.REGEX_AUTO_IMPORT_FILE)]
+      .map((arr) => arr[1])
+      .flat();
     fileImports.forEach((name) => {
-      const countMatches = fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
-      if (countMatches <= 1)
-        delete imports[basename(name, '.vue')];
-    })
+      const countMatches =
+        fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
+      if (countMatches <= 1) delete imports[basename(name, '.vue')];
+    });
   }
 
   reportKeys(allowEmpty = this.config.ALLOW_EMPTY_FILES) {
@@ -135,9 +140,13 @@ export class ExtractorCore extends CoreBase {
       return;
     }
 
-    const { REPORT_FILE_TYPE: fileType, REPORT_NAME: reportName, REPORT_OUTPUT: outputPath } = this.config;
+    const {
+      REPORT_FILE_TYPE: fileType,
+      REPORT_NAME: reportName,
+      REPORT_OUTPUT: outputPath,
+    } = this.config;
 
-    const filePath = resolve(outputPath, `${reportName}.${fileType}`)
+    const filePath = resolve(outputPath, `${reportName}.${fileType}`);
 
     const csvHeaders = [
       {
@@ -157,18 +166,21 @@ export class ExtractorCore extends CoreBase {
           path: filePath,
         }).writeRecords(
           Object.entries(this.foundedKeys).flatMap(([key, arr]) => {
-            return arr.map(i => ({ name: key, key: i }));
+            return arr.map((i) => ({ name: key, key: i }));
           }),
         );
         break;
       case 'json': {
         const sorted = Object.entries(this.foundedKeys)
           .sort((a, b) => b[1].length - a[1].length)
-          .filter(([_key, values]) => allowEmpty ? true : values.length)
-          .reduce((_obj, [k, v]) => ({
-            ..._obj,
-            [k]: [...new Set(v)],
-          }), {});
+          .filter(([_key, values]) => (allowEmpty ? true : values.length))
+          .reduce(
+            (_obj, [k, v]) => ({
+              ..._obj,
+              [k]: [...new Set(v)],
+            }),
+            {},
+          );
         writeFileSync(filePath, JSON.stringify(sorted, undefined, 2));
         break;
       }
