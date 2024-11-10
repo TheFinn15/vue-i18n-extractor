@@ -3,7 +3,7 @@ import process from 'node:process';
 import { parseArgs } from 'node:util';
 import consola from 'consola';
 import { ExtractorCore } from './core';
-import { delay } from './utils';
+import { delay } from './utils.ts';
 
 const { values } = parseArgs({
   args: Bun.argv,
@@ -39,6 +39,10 @@ const { values } = parseArgs({
       default: './',
       type: 'string',
     },
+    debug: {
+      default: false,
+      type: 'boolean',
+    },
   },
   allowPositionals: true,
   strict: true,
@@ -69,6 +73,7 @@ const ext = new ExtractorCore(input, {
   TSCONFIG_PATH: TSCONFIG_PATH ?? values.tsconfigPath,
   ALLOW_EMPTY_FILES: values.allowEmpty,
   REPORT_OUTPUT: REPORT_OUTPUT ?? values.reportOutput,
+  DEBUG_MODE: values.debug,
 });
 
 delay(200).then(async () => {

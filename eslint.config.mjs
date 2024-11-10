@@ -1,16 +1,14 @@
 import antfu from '@antfu/eslint-config';
 
 export default antfu({
-  formatters: {
-    prettierOptions: {
-      semi: true,
-      singleQuote: true,
-      tabWidth: 2,
-      endOfLine: 'lf',
-    },
+  stylistic: {
+    indent: 2,
+    quotes: 'single',
+    semi: true,
   },
   rules: {
     'style/member-delimiter-style': 'off',
     'no-console': 'warn',
   },
+  ignores: ['.eslint.config.*', 'tsconfig.json', 'package.json', 'README.md'],
 });

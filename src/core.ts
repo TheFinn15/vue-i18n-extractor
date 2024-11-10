@@ -1,26 +1,37 @@
 import type { ConfigExtractor, ObjectString } from './types';
-import {
-  createReadStream,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-import { basename, dirname, parse, resolve } from 'node:path';
+import { createReadStream, existsSync, readdirSync, readFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import process from 'node:process';
 import rl from 'node:readline';
-import consola from 'consola';
 import { createObjectCsvWriter } from 'csv-writer';
+import path from 'upath';
 import { CoreBase } from './base';
+import { ExtractorLogger } from './logger';
 import { useRegex } from './utils';
 
 export class ExtractorCore extends CoreBase {
+  logger: ExtractorLogger;
+
   constructor(path: string, config: Partial<ConfigExtractor>) {
     super();
 
-    this.selectedPath = path;
     this.config = {
       ...this.config,
       ...config,
     };
+
+    this.logger = new ExtractorLogger(this.isDebug);
+
+    if (!existsSync(path)) {
+      this.logger.log({
+        data: 'Input path not exist. Try again...',
+        type: 'error',
+        persist: true,
+      });
+      process.exit();
+    }
+
+    this.selectedPath = path;
 
     this.getProjectRoot();
     this.parseAutoImports();
@@ -29,38 +40,50 @@ export class ExtractorCore extends CoreBase {
   private getProjectRoot() {
     let projectRoot = '';
     let tempPath = this.inputIsFile
-      ? dirname(this.selectedPath)
+      ? path.dirname(this.selectedPath)
       : this.selectedPath;
     while (!projectRoot.length) {
-      const currentFolder = basename(tempPath);
+      const currentFolder = path.basename(tempPath);
       if (readdirSync(tempPath).includes('package.json'))
         projectRoot = tempPath;
       else tempPath = tempPath.slice(0, tempPath.lastIndexOf(currentFolder));
     }
     this.rootDir = projectRoot;
+    this.logger.log({ data: 'Project root parsed' });
   }
 
   async extractor() {
+    this.logger.log({ data: 'Be patient I`m working...', persist: true });
     if (!this.inputIsFile) {
       await this.extractDirectory();
-    } else {
+    }
+    else {
       await this.extract();
     }
   }
 
   private async extractDirectory() {
+    this.logger.log({
+      data: 'Trying to extract files from dir',
+    });
     const files = this.recursiveCheckDirectory(this.selectedPath);
-    for await (const name of files) {
-      const filePath = resolve(this.selectedPath, name);
-      await this.extract({}, filePath);
+    for await (const path of files) {
+      await this.extract({}, path);
     }
+    this.logger.log({
+      data: 'Extract directory is finished',
+    });
   }
 
   private async extract(imports: ObjectString = {}, file = this.selectedPath) {
-    const filePathInfo = parse(file);
-    const fileName = resolve(
-      filePathInfo.root,
-      basename(filePathInfo.dir),
+    this.logger.log({
+      data: ['Trying to parse:', file],
+    });
+
+    const filePathInfo = path.parse(file);
+    const fileName = path.join(
+      this.isWindows ? '' : filePathInfo.root,
+      path.basename(filePathInfo.dir),
       filePathInfo.base,
     );
     const fileImports = imports;
@@ -90,9 +113,11 @@ export class ExtractorCore extends CoreBase {
 
       if (componentName in this.autoImports) {
         fileImports[componentName] = this.autoImports[componentName];
-      } else if (name && path) {
+      }
+      else if (name && path) {
         fileImports[name] = path;
-      } else {
+      }
+      else {
         countIncorrectImport += 1;
       }
       if (translationKey) {
@@ -101,42 +126,61 @@ export class ExtractorCore extends CoreBase {
 
       countLines += 1;
     }
+    this.logger.log({
+      data: ['File were parsed:', file],
+    });
 
     this.checkUnusedImports(file, fileImports);
 
     if (
-      countLines === countIncorrectImport ||
-      !Object.keys(fileImports).length
+      countLines === countIncorrectImport
+      || !Object.keys(fileImports).length
     ) {
+      this.logger.log({
+        data: 'File haven`t imports',
+      });
       return;
     }
 
-    Object.entries(fileImports)
-      .filter(([_name, cPath]) =>
-        Object.keys(this.foundedKeys).every((key) => !cPath.includes(key)),
-      )
-      .forEach(([_name, compPath]) => {
-        this.extract(fileImports, this.resolveAlias(compPath));
-      });
+    const filteredImports = Object.entries(fileImports).filter(([, cPath]) =>
+      Object.keys(this.foundedKeys).every(key => !cPath.includes(key)),
+    );
+
+    for await (const item of filteredImports) {
+      const [, compPath] = item;
+      const nextFilePath = this.resolveAlias(compPath);
+      if (nextFilePath)
+        await this.extract(fileImports, nextFilePath);
+    }
   }
 
   private checkUnusedImports(filePath: string, imports: ObjectString) {
+    this.logger.log({
+      data: 'Check unused imports',
+    });
+
     const fileContent = readFileSync(filePath).toString();
     const fileImports = [...fileContent.matchAll(this.REGEX_AUTO_IMPORT_FILE)]
-      .map((arr) => arr[1])
+      .map(arr => arr[1])
       .flat();
     fileImports.forEach((name) => {
-      const countMatches =
-        fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
-      if (countMatches <= 1) delete imports[basename(name, '.vue')];
+      const countMatches
+        = fileContent.match(new RegExp(name, 'g'))?.length ?? 0;
+      if (countMatches <= 1)
+        delete imports[path.basename(name, '.vue')];
     });
   }
 
-  reportKeys(allowEmpty = this.config.ALLOW_EMPTY_FILES) {
+  async reportKeys(allowEmpty = this.config.ALLOW_EMPTY_FILES) {
+    this.logger.log({
+      data: 'Creating report',
+    });
     if (!Object.values(this.foundedKeys).flat().length) {
-      consola.error(
-        `Translation keys not found in or subpaths: ${this.selectedPath}`,
-      );
+      this.logger.log({
+        data: ['Translation keys not found in or subpaths:', this.selectedPath],
+        type: 'error',
+        persist: true,
+      });
       return;
     }
 
@@ -146,7 +190,7 @@ export class ExtractorCore extends CoreBase {
       REPORT_OUTPUT: outputPath,
     } = this.config;
 
-    const filePath = resolve(outputPath, `${reportName}.${fileType}`);
+    const filePath = path.resolve(outputPath, `${reportName}.${fileType}`);
 
     const csvHeaders = [
       {
@@ -161,12 +205,12 @@ export class ExtractorCore extends CoreBase {
 
     switch (fileType) {
       case 'csv':
-        createObjectCsvWriter({
+        await createObjectCsvWriter({
           header: csvHeaders,
           path: filePath,
         }).writeRecords(
           Object.entries(this.foundedKeys).flatMap(([key, arr]) => {
-            return arr.map((i) => ({ name: key, key: i }));
+            return arr.map(i => ({ name: key, key: i }));
           }),
         );
         break;
@@ -181,19 +225,28 @@ export class ExtractorCore extends CoreBase {
             }),
             {},
           );
-        writeFileSync(filePath, JSON.stringify(sorted, undefined, 2));
+        await writeFile(filePath, JSON.stringify(sorted, undefined, 2));
         break;
       }
     }
 
-    consola.success(`Translation keys is wrote in: ${filePath}`);
+    this.logger.log({
+      data: ['Translation keys is wrote in:', filePath],
+      type: 'success',
+      persist: true,
+    });
 
     return filePath;
   }
 
   private async parseAutoImports() {
+    this.logger.log({
+      data: 'Find auto-imports in the project',
+    });
     if (!this.autoImportPath) {
-      this.log('Auto-Imported Components not found.');
+      this.logger.log({
+        data: 'Auto-Imported Components not found.',
+      });
       return;
     }
 
@@ -203,29 +256,9 @@ export class ExtractorCore extends CoreBase {
       const [_, name, path] = arr;
       this.autoImports[name] = path;
     });
-  }
 
-  private resolveAlias(importPath: string) {
-    const root = this.config.TSCONFIG_PATH
-      ? this.rootDir
-      : `${this.rootDir}.nuxt/`;
-    const aliases = this.importsAlias;
-    const sorted = Object.keys(this.importsAlias).sort(
-      (a, b) => b.length - a.length,
-    );
-    for (const alias of sorted) {
-      const aliasWithoutStar = alias.replace('/*', '');
-
-      if (importPath.startsWith(aliasWithoutStar)) {
-        const aliasPath = aliases[alias][0].replace('/*', '');
-
-        return resolve(
-          root,
-          aliasPath,
-          `./${importPath.replace(aliasWithoutStar, '')}`,
-        );
-      }
-    }
-    return resolve(root, importPath);
+    this.logger.log({
+      data: 'Auto-imports found',
+    });
   }
 }

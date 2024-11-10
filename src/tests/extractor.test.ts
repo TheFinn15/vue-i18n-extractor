@@ -10,7 +10,7 @@ const testFile = Bun.env.TEST_FILE!;
 beforeAll(async () => {
   extractor = new ExtractorCore(testFile, {});
   await delay(200);
-  extractor.extractor();
+  await extractor.extractor();
 });
 
 describe('extractor', () => {
@@ -25,13 +25,13 @@ describe('extractor', () => {
     extractor.reportKeys(false);
     const report = reportJson as ObjectStringArray;
 
-    expect(Object.values(report).every((v) => v.length)).toBe(true);
+    expect(Object.values(report).every(v => v.length)).toBe(true);
   });
   it('check with empty report', async () => {
     await delay(500);
     extractor.reportKeys();
     const report = reportJson as ObjectStringArray;
 
-    expect(Object.values(report).every((v) => v.length)).toBe(true);
+    expect(Object.values(report).every(v => v.length)).toBe(true);
   });
 });

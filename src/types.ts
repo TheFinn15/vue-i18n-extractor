@@ -14,6 +14,15 @@ export interface ConfigExtractor {
 
   // allow empties in report file
   ALLOW_EMPTY_FILES: boolean;
+
+  // debug mode(enable logger)
+  DEBUG_MODE: boolean;
+}
+
+export interface LoggerFnParams {
+  type?: 'info' | 'success' | 'error';
+  persist?: boolean;
+  data: unknown[] | unknown;
 }
 
 export interface UseRegexParams {
