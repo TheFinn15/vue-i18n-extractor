@@ -38,17 +38,11 @@ export class ExtractorCore extends CoreBase {
   }
 
   private getProjectRoot() {
-    let projectRoot = '';
-    let tempPath = this.inputIsFile
-      ? path.dirname(this.selectedPath)
-      : this.selectedPath;
-    while (!projectRoot.length) {
-      const currentFolder = path.basename(tempPath);
-      if (readdirSync(tempPath).includes('package.json'))
-        projectRoot = tempPath;
-      else tempPath = tempPath.slice(0, tempPath.lastIndexOf(currentFolder));
+    let tempPath = this.inputIsFile ? path.dirname(this.selectedPath) : this.selectedPath;
+    while (!readdirSync(tempPath).includes('package.json')) {
+      tempPath = path.dirname(tempPath);
     }
-    this.rootDir = projectRoot;
+    this.rootDir = tempPath;
     this.logger.log({ data: 'Project root parsed' });
   }
 

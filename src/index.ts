@@ -8,44 +8,43 @@ import { delay } from './utils.ts';
 const { values } = parseArgs({
   args: Bun.argv,
   options: {
-    input: {
+    'input': {
       type: 'string',
     },
-    autoImportName: {
+    'auto-import-name': {
       default: 'components.d.ts',
       type: 'string',
     },
-    autoImportPath: {
+    'auto-import-path': {
       default: '',
       type: 'string',
     },
-    tsconfigPath: {
+    'tsconfig-path': {
       default: '',
       type: 'string',
     },
-    reportType: {
+    'report-type': {
       default: 'json',
       type: 'string',
     },
-    reportName: {
+    'report-name': {
       default: 'i18n-report',
       type: 'string',
     },
-    allowEmpty: {
-      default: true,
+    'allow-empty': {
+      default: false,
       type: 'boolean',
     },
-    reportOutput: {
+    'report-output': {
       default: './',
       type: 'string',
     },
-    debug: {
+    'debug': {
       default: false,
       type: 'boolean',
     },
   },
   allowPositionals: true,
-  strict: true,
 });
 
 const {
@@ -66,13 +65,13 @@ if (!input) {
 }
 
 const ext = new ExtractorCore(input, {
-  AUTO_IMPORT_DECLARATION_NAME: AUTO_IMPORT_NAME ?? values.autoImportName,
-  AUTO_IMPORT_DECLARATION_PATH: AUTO_IMPORT_PATH ?? values.autoImportPath,
-  REPORT_FILE_TYPE: (REPORT_TYPE ?? values.reportType) as ReportType,
-  REPORT_NAME: REPORT_NAME ?? values.reportName,
-  TSCONFIG_PATH: TSCONFIG_PATH ?? values.tsconfigPath,
-  ALLOW_EMPTY_FILES: values.allowEmpty,
-  REPORT_OUTPUT: REPORT_OUTPUT ?? values.reportOutput,
+  AUTO_IMPORT_DECLARATION_NAME: AUTO_IMPORT_NAME ?? values['auto-import-name'],
+  AUTO_IMPORT_DECLARATION_PATH: AUTO_IMPORT_PATH ?? values['auto-import-path'],
+  REPORT_FILE_TYPE: (REPORT_TYPE ?? values['report-type']) as ReportType,
+  REPORT_NAME: REPORT_NAME ?? values['report-name'],
+  TSCONFIG_PATH: TSCONFIG_PATH ?? values['tsconfig-path'],
+  ALLOW_EMPTY_FILES: values['allow-empty'],
+  REPORT_OUTPUT: REPORT_OUTPUT ?? values['report-output'],
   DEBUG_MODE: values.debug,
 });
 
