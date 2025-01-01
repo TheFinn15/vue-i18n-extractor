@@ -36,3 +36,8 @@ type ObjectOf<ObjectType> = Record<string, ObjectType>;
 export type ObjectString = ObjectOf<string>;
 
 export type ObjectStringArray = ObjectOf<string[]>;
+
+export type TranslationEntity = ObjectOf<{
+  key: string;
+  params: string[];
+}[]>;

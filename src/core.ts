@@ -91,6 +91,8 @@ export class ExtractorCore extends CoreBase {
 
     this.foundedKeys[fileName] = [];
 
+    const { parse: parseParams, format: formatParams } = this.formatTranslationParams();
+
     for await (const line of rls) {
       const [, componentName] = useRegex({
         text: line,
@@ -105,6 +107,8 @@ export class ExtractorCore extends CoreBase {
         text: line,
       });
 
+      parseParams.bind(this)(line, translationKey);
+
       if (componentName in this.autoImports) {
         fileImports[componentName] = this.autoImports[componentName];
       }
@@ -115,7 +119,10 @@ export class ExtractorCore extends CoreBase {
         countIncorrectImport += 1;
       }
       if (translationKey) {
-        this.foundedKeys[fileName].push(translationKey);
+        this.foundedKeys[fileName].push({
+          key: translationKey,
+          params: formatParams(),
+        });
       }
 
       countLines += 1;
@@ -146,6 +153,47 @@ export class ExtractorCore extends CoreBase {
       if (nextFilePath)
         await this.extract(fileImports, nextFilePath);
     }
+  }
+
+  private formatTranslationParams() {
+    // array of counts
+    const arrayParams: number[] = [];
+    // array of object keys
+    const objectParams: string[] = [];
+
+    return {
+      arrayParams,
+      objectParams,
+      parse(this: ExtractorCore, line: string, found: string) {
+        const [__, arrParams = '', objParams = '{}'] = useRegex({
+          regex: this.REGEX_I18N_PARAMS,
+          text: line,
+        });
+
+        if (found) {
+          if (arrParams.length) {
+            const array = (arrParams.includes(',') ? arrParams.split(',') : arrParams.split(''));
+            const len = array.length ?? 0;
+            if (len)
+              arrayParams.push(len);
+          }
+          else if (objParams) {
+            const val = Object.keys(JSON.parse(objParams));
+            if (val.length)
+              objectParams.push(...val);
+          }
+        }
+      },
+      format(): string[] {
+        if (arrayParams.length) {
+          return arrayParams.map((_, ind) => `{${ind}}`);
+        }
+        if (objectParams.length) {
+          return objectParams.map(key => `{${key}}`);
+        }
+        return [];
+      },
+    };
   }
 
   private checkUnusedImports(filePath: string, imports: ObjectString) {
@@ -195,6 +243,10 @@ export class ExtractorCore extends CoreBase {
         id: 'key',
         title: 'Variable',
       },
+      {
+        id: 'params',
+        title: 'Parameters',
+      },
     ];
 
     switch (fileType) {
@@ -204,7 +256,7 @@ export class ExtractorCore extends CoreBase {
           path: filePath,
         }).writeRecords(
           Object.entries(this.foundedKeys).flatMap(([key, arr]) => {
-            return arr.map(i => ({ name: key, key: i }));
+            return arr.map(i => ({ name: key, key: i.key, params: i.params.join(', ') }));
           }),
         );
         break;

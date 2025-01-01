@@ -1,4 +1,4 @@
-import type { ConfigExtractor, ObjectString, ObjectStringArray } from './types';
+import type { ConfigExtractor, ObjectString, ObjectStringArray, TranslationEntity } from './types';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 import process from 'node:process';
@@ -17,6 +17,9 @@ export abstract class CoreBase {
   protected readonly REGEX_I18N_KEY
     = /\b(?:\$t|t)\(\s*["'`]([^"'`]+)["'`][\s\S]*\)/gi;
 
+  protected readonly REGEX_I18N_PARAMS
+    = /\b(?:\$t|t)\(\s*["'`][^"'`]+["'`],\s*\[([^\]]+)\]|(\{[^}]+\})\)/gi;
+
   protected readonly REGEX_TEMPLATE_COMPONENT = /<(\w+)/g;
   protected readonly REGEX_TEMPLATE_CONTENT
     = /<template>([\s\S]*?)<\/template>/g;
@@ -34,7 +37,7 @@ export abstract class CoreBase {
 
   autoImports: ObjectString = {};
 
-  foundedKeys: ObjectStringArray = {};
+  foundedKeys: TranslationEntity = {};
   rootDir = '';
   selectedPath = '';
 
